@@ -8,11 +8,11 @@ plugins {
     kotlin("plugin.serialization") version "1.8.0"
 }
 
-group = "com.monitoring"
+group = "monitoring"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.monitoring.ApplicationKt")
+    mainClass.set("monitoring.ApplicationKt")
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
@@ -20,11 +20,14 @@ application {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") }
 }
 
 dependencies {
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-netty-jvm")
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
@@ -33,4 +36,5 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-server-html-builder:$ktor_version")
+    implementation("com.github.UnitTestBot:jacodb:neo-SNAPSHOT")
 }
