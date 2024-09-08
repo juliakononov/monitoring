@@ -1,6 +1,7 @@
 val kotlin_version: String by project
 val logback_version: String by project
 val ktor_version: String by project
+val kotlin_css_version: String by project
 
 plugins {
     kotlin("jvm") version "2.0.0"
@@ -11,11 +12,28 @@ plugins {
 group = "monitoring"
 version = "0.0.1"
 
-application {
-    mainClass.set("monitoring.ApplicationKt")
+tasks.register<Jar>("jarClient") {
+    archiveClassifier.set("client")
+    manifest {
+        attributes["Main-Class"] = "monitoring.client.ClientKt"
+    }
+    from(sourceSets["main"].output)
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
 
-    val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
+tasks.register<Jar>("jarServer") {
+    archiveClassifier.set("server")
+    manifest {
+        attributes["Main-Class"] = "monitoring.server.ServerKt"
+    }
+    from(sourceSets["main"].output)
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register("buildAllJars") {
+    dependsOn("jarServer", "jarClient") // Зависимости от двух наших задач JAR
 }
 
 repositories {
@@ -24,8 +42,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-core-jvm")
-    implementation("io.ktor:ktor-server-netty-jvm")
+    implementation("io.ktor:ktor-server-core:$ktor_version")
+    implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
@@ -36,5 +54,6 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-server-html-builder:$ktor_version")
+    implementation("org.jetbrains.kotlin-wrappers:kotlin-css:$kotlin_css_version")
     implementation("com.github.UnitTestBot:jacodb:neo-SNAPSHOT")
 }
