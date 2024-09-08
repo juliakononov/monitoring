@@ -34,18 +34,30 @@ fun Application.clientRoutes() {
                     title { +"Monitoring" }
                     style {
                         +"""
+                        h1 {
+                            font-family: Arial, Helvetica, sans-serif;
+                            color: black
+                        }
                         table {
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                }
-                                th, td {
-                                    border: 1px solid black;
-                                    padding: 8px;
-                                    text-align: left;
-                                }
-                                th {
-                                    background-color: #f2f2f2;
-                                }
+                            font-family: Arial, Helvetica, sans-serif;
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th, td {
+                            border: 1px solid black;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {padding-top: 12px;
+                            padding-bottom: 12px;
+                            text-align: left;
+                            background-color: #04AA6D;
+                            color: white;
+                        }
+                        tr:nth-child(even) { /*  Делает четные строки с другим фоном */
+                            background-color: #f2f2f2;
+                        }
+                        tr:hover {background-color: #ddd;}
                         """
                     }
                 }
