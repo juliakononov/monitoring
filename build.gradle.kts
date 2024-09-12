@@ -33,7 +33,7 @@ tasks.register<Jar>("jarServer") {
 }
 
 tasks.register("buildAllJars") {
-    dependsOn("jarServer", "jarClient") // Зависимости от двух наших задач JAR
+    dependsOn("jarServer", "jarClient")
 }
 
 repositories {
