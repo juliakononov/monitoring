@@ -31,6 +31,10 @@ fun Application.clientRoutes() {
 
             call.respondHtml(HttpStatusCode.OK) {
                 head {
+                    meta {
+                        httpEquiv = "refresh"
+                        content = "0.5"
+                    }
                     title { +"Monitoring" }
                     style {
                         +"""
