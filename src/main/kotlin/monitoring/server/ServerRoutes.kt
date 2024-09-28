@@ -6,6 +6,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import monitoring.entities.Metric
+import java.util.*
 
 fun Application.serverRoutes() {
     routing {
@@ -17,17 +18,10 @@ fun Application.serverRoutes() {
             call.respond(HttpStatusCode.OK, "Successfully processed and saved ${metrics.size} metrics")
         }
 
-        //TODO: переписать
-//        post("/server/new_session") {
-//            // Обработка новой "сессии"
-//            // TODO: Проверить работу функции + добавить в метрики ID
-//
-//            val new = call.receive<String>()
-//            if (new == "New") {
-//                val myUuid = UUID.randomUUID()
-//                call.respond(myUuid)
-//            }
-//        }
+        get("/server/new-session") {
+            val myUuid = UUID.randomUUID().toString()
+            call.respond(HttpStatusCode.Created, myUuid)
+        }
 
         get("/server/send-unique-metrics") {
             val uniqueMetricNames = metricStorage.getUniqueMetricNames()
