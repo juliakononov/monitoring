@@ -13,8 +13,7 @@ import java.io.OutputStreamWriter
 
 fun generateRandomMetric(): Metric {
     val metricName = "Metric${Random.nextInt(1, 10)}"
-    val funName = "Function${Random.nextInt(1, 10)}"
-    //TODO: add Double
+    val funName = "Function${Random.nextInt(1, 201)}"
     val type = listOf("Boolean", "Int", "String", "Double").random()
     val value = when (type) {
         "Boolean" -> Random.nextBoolean().toString()

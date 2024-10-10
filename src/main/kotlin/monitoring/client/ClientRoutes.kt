@@ -20,15 +20,26 @@ fun Application.clientRoutes() {
         defaultRequest {
             url("http://localhost:8080")
         }
-
         install(ContentNegotiation) {
             json()
         }
     }
+
     routing {
         get("/client/table") {
-            val uniqueMetricNames : Set<String> = client.get("/server/send-unique-metrics").body()
-            val allFunctions : List<Function>  = client.get("/server/send-functions").body()
+            val uniqueMetricNames: Set<String> = client.get("/server/send-unique-metrics").body()
+            val allFunctions: List<Function> = client.get("/server/send-functions").body()
+
+            // Параметры для постраничной навигации
+            val pageSize = 10 // Количество функций на странице
+            val pageNumber = call.parameters["page"]?.toIntOrNull() ?: 1 // Текущая страница
+            val totalFunctions = allFunctions.size
+            val totalPages = (totalFunctions + pageSize - 1) / pageSize // Общее количество страниц
+
+            // Вычисляем границы для текущей страницы
+            val startIndex = (pageNumber - 1) * pageSize
+            val endIndex = minOf(startIndex + pageSize, totalFunctions)
+            val functionsOnCurrentPage = allFunctions.subList(startIndex, endIndex)
 
             call.respondHtml(HttpStatusCode.OK) {
                 head {
@@ -36,7 +47,6 @@ fun Application.clientRoutes() {
                         httpEquiv = "refresh"
                         content = "$PAGE_REFRESH_INTERVAL"
                     }
-
                     title { +"Monitoring" }
                     style {
                         +"""
@@ -64,6 +74,33 @@ fun Application.clientRoutes() {
                             background-color: #f2f2f2;
                         }
                         tr:hover {background-color: #ddd;}
+                        
+                        .nav-buttons {
+                            margin-top: 20px;
+                        }
+                        .nav-button {
+                            display: inline-block;
+                            padding: 10px 15px;
+                            margin: 0 2px;
+                            border: none;
+                            border-radius: 2px;
+                            background-color: #f2f2f2;
+                            color: black;
+                            text-decoration: none;
+                            font-weight: bold;
+                            transition: background-color 0.3s;
+                        }
+                        .nav-button:hover {
+                            background-color: #ddd; /* Темнее при наведении */
+                        }
+                        .nav-button.active {
+                            background-color: #04AA6D; /* Цвет для активной страницы */
+                        }
+                        .nav-button.disabled {
+                            border: 1px solid black;
+                            background-color: #f2f2f2; /* Серый цвет для неактивных кнопок */
+                            cursor: not-allowed;
+                        }
                         """
                     }
                 }
@@ -76,7 +113,7 @@ fun Application.clientRoutes() {
                                 th { +metricName }
                             }
                         }
-                        allFunctions.forEach { f ->
+                        functionsOnCurrentPage.forEach { f ->
                             tr {
                                 td { +f.funName }
                                 uniqueMetricNames.forEach { metricName ->
@@ -85,6 +122,32 @@ fun Application.clientRoutes() {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // Кнопки навигации с номерами страниц
+                    div(classes = "nav-buttons") {
+                        // Кнопка перехода на первую страницу
+                        if (pageNumber > 1) {
+                            a(href = "/client/table?page=1", classes = "nav-button active") { +"First" }
+                        } else {
+                            span(classes = "nav-button active") { +"First" }
+                        }
+
+                        // Кнопки для конкретных страниц
+                        for (i in 1..totalPages) {
+                            if (i == pageNumber) {
+                                span(classes = "nav-button active") { +i.toString() } // Активная страница
+                            } else {
+                                a(href = "/client/table?page=$i", classes = "nav-button") { +i.toString() }
+                            }
+                        }
+
+                        // Кнопка перехода на последнюю страницу
+                        if (pageNumber < totalPages) {
+                            a(href = "/client/table?page=$totalPages", classes = "nav-button active") { +"Last" }
+                        } else {
+                            span(classes = "nav-button active") { +"Last" }
                         }
                     }
                 }

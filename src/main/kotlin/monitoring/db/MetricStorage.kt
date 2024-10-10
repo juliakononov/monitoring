@@ -8,7 +8,7 @@ import org.jacodb.api.jvm.storage.ers.ErsSettings
 import org.jacodb.api.jvm.storage.ers.findOrNew
 import org.jacodb.impl.storage.ers.ram.RAMEntityRelationshipStorageSPI
 
-const val NUM_OF_ELEMENT_ON_PAGE = 50
+const val NUM_OF_ELEMENT_ON_PAGE = 200
 
 class MetricStorage : Storage {
     private val ersSettings: ErsSettings get() = EmptyErsSettings
