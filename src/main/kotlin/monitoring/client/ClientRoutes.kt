@@ -14,12 +14,13 @@ import io.ktor.server.routing.*
 import kotlinx.html.*
 import monitoring.entities.Function
 
-const val PAGE_REFRESH_INTERVAL = 0.5
+const val PAGE_REFRESH_INTERVAL = 1
 fun Application.clientRoutes() {
     val client = HttpClient(CIO) {
         defaultRequest {
             url("http://localhost:8080")
         }
+
         install(ContentNegotiation) {
             json()
         }
@@ -27,30 +28,35 @@ fun Application.clientRoutes() {
 
     routing {
         get("/client/table") {
+            // Получаем параметры запроса (номер страницы), по умолчанию - 1 страница
+            val currentPage = call.parameters["page"]?.toIntOrNull() ?: 1
+            val itemsPerPage = 10 // Количество элементов на странице
+
+            // Получаем данные с сервера
             val uniqueMetricNames: Set<String> = client.get("/server/send-unique-metrics").body()
             val allFunctions: List<Function> = client.get("/server/send-functions").body()
 
-            // Параметры для постраничной навигации
-            val pageSize = 10 // Количество функций на странице
-            val pageNumber = call.parameters["page"]?.toIntOrNull() ?: 1 // Текущая страница
-            val totalFunctions = allFunctions.size
-            val totalPages = (totalFunctions + pageSize - 1) / pageSize // Общее количество страниц
+            // Определяем начальный и конечный индекс для текущей страницы
+            val totalItems = allFunctions.size
+            val totalPages = (totalItems + itemsPerPage - 1) / itemsPerPage // Рассчитываем количество страниц
+            val startIndex = (currentPage - 1) * itemsPerPage
+            val endIndex = minOf(startIndex + itemsPerPage, totalItems)
 
-            // Вычисляем границы для текущей страницы
-            val startIndex = (pageNumber - 1) * pageSize
-            val endIndex = minOf(startIndex + pageSize, totalFunctions)
-            val functionsOnCurrentPage = allFunctions.subList(startIndex, endIndex)
+            // Получаем функции для текущей страницы
+            val paginatedFunctions = allFunctions.subList(startIndex, endIndex)
 
             call.respondHtml(HttpStatusCode.OK) {
                 head {
                     meta {
                         httpEquiv = "refresh"
-                        content = "$PAGE_REFRESH_INTERVAL"
+                        content = "$PAGE_REFRESH_INTERVAL" // Интервал автообновления
                     }
+
                     title { +"Monitoring" }
+
                     style {
                         +"""
-                        h1 {
+                            h1 {
                             font-family: Arial, Helvetica, sans-serif;
                             color: black
                         }
@@ -74,34 +80,40 @@ fun Application.clientRoutes() {
                             background-color: #f2f2f2;
                         }
                         tr:hover {background-color: #ddd;}
-                        
-                        .nav-buttons {
+                            
+                        .pagination {
+                            display: flex;
+                            justify-content: center;
                             margin-top: 20px;
                         }
-                        .nav-button {
-                            display: inline-block;
-                            padding: 10px 15px;
-                            margin: 0 2px;
-                            border: none;
-                            border-radius: 2px;
+                        .pagination button {
                             background-color: #f2f2f2;
                             color: black;
-                            text-decoration: none;
-                            font-weight: bold;
-                            transition: background-color 0.3s;
-                        }
-                        .nav-button:hover {
-                            background-color: #ddd; /* Темнее при наведении */
-                        }
-                        .nav-button.active {
-                            background-color: #04AA6D; /* Цвет для активной страницы */
-                        }
-                        .nav-button.disabled {
                             border: 1px solid black;
-                            background-color: #f2f2f2; /* Серый цвет для неактивных кнопок */
+                            padding: 10px 20px;
+                            margin: 2px;
+                            border: none;
+                            border-radius: 2px;
+                            cursor: pointer;
+                            font-size: 16px;
+                        }
+                        .pagination button:hover {
+                            background-color: #ddd;
+                        }
+                        .pagination button[disabled] {
+                            background-color: #737070;
                             cursor: not-allowed;
                         }
-                        """
+                        .pagination .active {
+                            background-color: #04AA6D;
+                            font-weight: bold;
+                        }
+                        .pagination .dots {
+                            padding: 10px 20px;
+                            margin: 5px;
+                            font-size: 16px;
+                        }
+                        """.trimIndent()
                     }
                 }
                 body {
@@ -113,7 +125,7 @@ fun Application.clientRoutes() {
                                 th { +metricName }
                             }
                         }
-                        functionsOnCurrentPage.forEach { f ->
+                        paginatedFunctions.forEach { f ->
                             tr {
                                 td { +f.funName }
                                 uniqueMetricNames.forEach { metricName ->
@@ -125,29 +137,41 @@ fun Application.clientRoutes() {
                         }
                     }
 
-                    // Кнопки навигации с номерами страниц
-                    div(classes = "nav-buttons") {
-                        // Кнопка перехода на первую страницу
-                        if (pageNumber > 1) {
-                            a(href = "/client/table?page=1", classes = "nav-button active") { +"First" }
-                        } else {
-                            span(classes = "nav-button active") { +"First" }
-                        }
-
-                        // Кнопки для конкретных страниц
-                        for (i in 1..totalPages) {
-                            if (i == pageNumber) {
-                                span(classes = "nav-button active") { +i.toString() } // Активная страница
-                            } else {
-                                a(href = "/client/table?page=$i", classes = "nav-button") { +i.toString() }
+                    // Добавляем кнопки навигации
+                    div("pagination") {
+                        fun renderPageButton(page: Int) {
+                            button(classes = if (page == currentPage) "active" else "") {
+                                onClick = "window.location.href='/client/table?page=$page'"
+                                +page.toString()
                             }
                         }
 
-                        // Кнопка перехода на последнюю страницу
-                        if (pageNumber < totalPages) {
-                            a(href = "/client/table?page=$totalPages", classes = "nav-button active") { +"Last" }
-                        } else {
-                            span(classes = "nav-button active") { +"Last" }
+                        // Рендерим первые 2 страницы
+                        for (page in 1..2) {
+                            renderPageButton(page)
+                        }
+
+                        // Если текущая страница больше 4, рендерим троеточие
+                        if (currentPage > 5) {
+                            span("dots") { +"..." }
+                        }
+
+                        // Страницы вокруг текущей: 2 до, текущая и 2 после
+                        val startRange = maxOf(3, currentPage - 2)
+                        val endRange = minOf(totalPages - 2, currentPage + 2)
+
+                        for (page in startRange..endRange) {
+                            renderPageButton(page)
+                        }
+
+                        // Если текущая страница меньше, чем totalPages - 4, рендерим троеточие
+                        if (currentPage < totalPages - 4) {
+                            span("dots") { +"..." }
+                        }
+
+                        // Рендерим последние 2 страницы
+                        for (page in (totalPages - 1)..totalPages) {
+                            renderPageButton(page)
                         }
                     }
                 }
