@@ -59,7 +59,7 @@ java -jar build/libs/monitoring-0.0.1-client.jar
   * `Int`
   * `String`
   * `Boolean`
-  * **TODO:** `Double`
+  * `Double`
 * `value` должно соответствовать `type`
 * `transitive` может быть:
   * `true` 
