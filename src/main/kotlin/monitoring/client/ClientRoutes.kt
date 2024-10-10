@@ -14,6 +14,7 @@ import io.ktor.server.routing.*
 import kotlinx.html.*
 import monitoring.entities.Function
 
+const val PAGE_REFRESH_INTERVAL = 0.5
 fun Application.clientRoutes() {
     val client = HttpClient(CIO) {
         defaultRequest {
@@ -33,8 +34,9 @@ fun Application.clientRoutes() {
                 head {
                     meta {
                         httpEquiv = "refresh"
-                        content = "0.5"
+                        content = "$PAGE_REFRESH_INTERVAL"
                     }
+
                     title { +"Monitoring" }
                     style {
                         +"""

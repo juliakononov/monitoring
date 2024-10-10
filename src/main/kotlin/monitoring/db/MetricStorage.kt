@@ -31,7 +31,6 @@ class MetricStorage : Storage {
         fun saveValue(entity: Entity) {
             val value = getValue(metric.params.type, metric.params.value)
 
-            //TODO: не сохраняется double
             if (metric.params.transitive) {
                 entity["Transitive${metric.name}.${metric.params.type}"] = value
             } else {
@@ -40,6 +39,11 @@ class MetricStorage : Storage {
         }
 
         storage.transactional { txn ->
+            //TODO: разобраться с сессией новой
+//            val session = txn.find(type = "Session", propertyName = "guid", value = metric.guid)
+//            if (session.isEmpty) {
+//                createNewStorage
+//            }
             val entity = txn.findOrNew(type = "Function", property = "functionName", value = metric.params.funName)
             saveValue(entity)
         }

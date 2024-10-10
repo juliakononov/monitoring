@@ -15,12 +15,12 @@ fun generateRandomMetric(): Metric {
     val metricName = "Metric${Random.nextInt(1, 10)}"
     val funName = "Function${Random.nextInt(1, 10)}"
     //TODO: add Double
-    val type = listOf("Boolean", "Int", "String").random()
+    val type = listOf("Boolean", "Int", "String", "Double").random()
     val value = when (type) {
         "Boolean" -> Random.nextBoolean().toString()
         "Int" -> Random.nextInt(0, 100).toString()
         "String" -> "str" + Random.nextInt(0, 100).toString()
-//        "Double" -> Random.nextDouble(0.0, 100.0).toString()
+        "Double" -> Random.nextDouble(0.0, 100.0).toString()
         else -> ""
     }
     val transitive = Random.nextBoolean()
