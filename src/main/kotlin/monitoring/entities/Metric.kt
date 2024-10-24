@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Metric(
-//    val guid: ,
+    val guid: String,
     val name: String,
     val params: Params
 )

@@ -2,19 +2,20 @@ package monitoring.db
 
 import monitoring.entities.Metric
 import monitoring.entities.Function
-import org.jacodb.api.jvm.storage.ers.EmptyErsSettings
-import org.jacodb.api.jvm.storage.ers.Entity
-import org.jacodb.api.jvm.storage.ers.ErsSettings
-import org.jacodb.api.jvm.storage.ers.findOrNew
+import org.jacodb.api.storage.ers.EmptyErsSettings
+import org.jacodb.api.storage.ers.Entity
+import org.jacodb.api.storage.ers.ErsSettings
+import org.jacodb.api.storage.ers.EntityRelationshipStorage
+import org.jacodb.api.storage.ers.findOrNew
 import org.jacodb.impl.storage.ers.ram.RAMEntityRelationshipStorageSPI
 
-const val NUM_OF_ELEMENT_ON_PAGE = 50
+const val NUM_OF_ELEMENT_ON_PAGE = 20
 
 class MetricStorage : Storage {
     private val ersSettings: ErsSettings get() = EmptyErsSettings
     private val persistenceLocation: String? get() = null
 
-    private val storage = RAMEntityRelationshipStorageSPI().newStorage(persistenceLocation, ersSettings)
+    private val storage: HashMap<String, EntityRelationshipStorage> = hashMapOf()
 
     private fun createOrUpdateEntity(metric: Metric) {
 
@@ -38,12 +39,10 @@ class MetricStorage : Storage {
             }
         }
 
-        storage.transactional { txn ->
-            //TODO: разобраться с сессией новой
-//            val session = txn.find(type = "Session", propertyName = "guid", value = metric.guid)
-//            if (session.isEmpty) {
-//                createNewStorage
-//            }
+        storage.putIfAbsent(metric.guid, RAMEntityRelationshipStorageSPI().newStorage(persistenceLocation, ersSettings))
+        val session = storage.get(metric.guid)!!
+
+        session.transactional { txn ->
             val entity = txn.findOrNew(type = "Function", property = "functionName", value = metric.params.funName)
             saveValue(entity)
         }
@@ -55,8 +54,13 @@ class MetricStorage : Storage {
         }
     }
 
-    override fun getUniqueMetricNames(): List<String> {
-        return storage.transactional { txn ->
+    fun getSessionsGuid(): MutableSet<String> {
+        return storage.keys
+    }
+
+    override fun getCurrentSessionMetricNames(sessionGuid: String): List<String> {
+        val session = storage.getOrDefault(sessionGuid, RAMEntityRelationshipStorageSPI().newStorage(persistenceLocation, ersSettings))
+        return session.transactional { txn ->
             txn.getPropertyNames("Function").map{metricName ->
                 metricName.split(".")[0]
             }
@@ -74,10 +78,11 @@ class MetricStorage : Storage {
     }
 
     //TODO: добавить сортировку
-    override fun getFunctionsToPage(pageNumber: Int, sortedBy: String): MutableList<Function> {
+    override fun getFunctionsToPage(sessionGuid: String, pageNumber: Int, sortedBy: String): MutableList<Function> {
         val functions: MutableList<Function> = mutableListOf()
+        val session = storage.getOrDefault(sessionGuid, RAMEntityRelationshipStorageSPI().newStorage(persistenceLocation, ersSettings))
 
-        storage.transactional { txn ->
+        session.transactional { txn ->
             val uniqueMetrics =  txn.getPropertyNames("Function") - "functionName"
 
             val entities = txn.all("Function")

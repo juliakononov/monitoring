@@ -10,11 +10,11 @@ import kotlin.concurrent.fixedRateTimer
 import monitoring.entities.Metric
 import monitoring.entities.Params
 import java.io.OutputStreamWriter
+import java.util.*
 
-fun generateRandomMetric(): Metric {
+fun generateRandomMetric(guid: String): Metric {
     val metricName = "Metric${Random.nextInt(1, 10)}"
-    val funName = "Function${Random.nextInt(1, 10)}"
-    //TODO: add Double
+    val funName = "Function${Random.nextInt(1, 201)}"
     val type = listOf("Boolean", "Int", "String", "Double").random()
     val value = when (type) {
         "Boolean" -> Random.nextBoolean().toString()
@@ -26,7 +26,9 @@ fun generateRandomMetric(): Metric {
     val transitive = Random.nextBoolean()
 
     return Metric(
+        guid = guid,
         name = metricName,
+        //TODO: исправить работу
         params = Params(
             funName = funName,
             type = type,
@@ -58,10 +60,12 @@ fun sendMetrics(metrics: List<Metric>) {
 fun main() {
     runBlocking {
         val delta: Long = 500  //в миллисекундах
+        val guid = UUID.randomUUID().toString()
+
 
         fixedRateTimer("metricSender", initialDelay = 0, period = delta) {
             val randomSize = Random.nextInt(1, 10)
-            val metrics = List(randomSize) { generateRandomMetric() }
+            val metrics = List(randomSize) { generateRandomMetric(guid) }
             sendMetrics(metrics)
         }
     }

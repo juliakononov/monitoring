@@ -10,11 +10,12 @@ import io.ktor.client.plugins.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.html.*
 import monitoring.entities.Function
 
-const val PAGE_REFRESH_INTERVAL = 0.5
+const val PAGE_REFRESH_INTERVAL = 1
 fun Application.clientRoutes() {
     val client = HttpClient(CIO) {
         defaultRequest {
@@ -26,68 +27,130 @@ fun Application.clientRoutes() {
         }
     }
     routing {
-        get("/client/table") {
-            val uniqueMetricNames : Set<String> = client.get("/server/send-unique-metrics").body()
-            val allFunctions : List<Function>  = client.get("/server/send-functions").body()
+        get("client/sessions") {
+            val sessionsGuid: MutableSet<String> = client.get("/server/send-sessions-guid").body()
 
-            call.respondHtml(HttpStatusCode.OK) {
+            call.respondHtml {
                 head {
-                    meta {
-                        httpEquiv = "refresh"
-                        content = "$PAGE_REFRESH_INTERVAL"
-                    }
-
-                    title { +"Monitoring" }
+                    title("Select session")
                     style {
-                        +"""
-                        h1 {
-                            font-family: Arial, Helvetica, sans-serif;
-                            color: black
-                        }
-                        table {
-                            font-family: Arial, Helvetica, sans-serif;
-                            width: 100%;
-                            border-collapse: collapse;
-                        }
-                        th, td {
-                            border: 1px solid black;
-                            padding: 8px;
-                            text-align: left;
-                        }
-                        th {padding-top: 12px;
-                            padding-bottom: 12px;
-                            text-align: left;
-                            background-color: #04AA6D;
-                            color: white;
-                        }
-                        tr:nth-child(even) { /*  Делает четные строки с другим фоном */
-                            background-color: #f2f2f2;
-                        }
-                        tr:hover {background-color: #ddd;}
-                        """
+                        +"body { font-family: Arial, sans-serif; margin: 20px; }"
+                        +"input { padding: 10px; margin-bottom: 20px; font-size: 16px; }"
+                        +"ul { list-style-type: none; padding: 0; }"
+                        +"li { padding: 10px; margin: 5px 0; background-color: #f0f0f0; border-radius: 5px; cursor: pointer; }"
+                        +"li:hover { background-color: #e0e0e0; }"
                     }
                 }
                 body {
-                    h1 { +"Monitoring System" }
-                    table {
-                        tr {
-                            th { +"Function Name" }
-                            uniqueMetricNames.forEach { metricName ->
-                                th { +metricName }
+                    h1 { +"Select your session" }
+                    input {
+                        id = "search"
+                        placeholder = "Session search..."
+                        onInput = "filterSessions()"
+                    }
+                    ul {
+                        id = "session-list"
+                        // Список сессий
+                        sessionsGuid.forEach { guid ->
+                            li {
+                                attributes["data-guid"] = guid
+                                onClick = "window.location.href = '/session/$guid';"
+                                +"$guid"
                             }
                         }
-                        allFunctions.forEach { f ->
+                    }
+                    script {
+                        unsafe {
+                            // JavaScript для фильтрации сессий
+                            +"""
+                    let sessions = ${sessionsGuid.map { """{"guid":"$it"}""" }};
+                    function filterSessions() {
+                        const query = document.getElementById('search').value.toLowerCase();
+                        const filteredSessions = sessions.filter(session => session.guid.toLowerCase().includes(query));
+                        const sessionListElement = document.getElementById('session-list');
+                        sessionListElement.innerHTML = '';
+                        filteredSessions.forEach(session => {
+                            const li = document.createElement('li');
+                            li.textContent = session.guid;
+                            li.setAttribute('data-guid', session.guid);
+                            li.onclick = () => window.location.href = '/session/' + session.guid;
+                            sessionListElement.appendChild(li);
+                        });
+                    }
+                    """
+                        }
+                    }
+                }
+            }
+        }
+        get("/session/{guid}") {
+            val guid = call.parameters["guid"]
+            if (guid != null) {
+                val uniqueMetricNames: Set<String> = client.get("/server/send-unique-metrics/$guid").body()
+                val allFunctions: List<Function> = client.get("/server/send-functions/$guid").body()
+
+                call.respondHtml(HttpStatusCode.OK) {
+                    head {
+                        meta {
+                            httpEquiv = "refresh"
+                            content = "$PAGE_REFRESH_INTERVAL"
+                        }
+
+                        title { +"Monitoring" }
+                        style {
+                            +"""
+            h1 {
+                font-family: Arial, Helvetica, sans-serif;
+                color: black
+            }
+            table {
+                font-family: Arial, Helvetica, sans-serif;
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 8px;
+                text-align: left;
+            }
+            th {padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: left;
+                background-color: #04AA6D;
+                color: white;
+            }
+            tr:nth-child(even) { /*  Делает четные строки с другим фоном */
+                background-color: #f2f2f2;
+            }
+            tr:hover {background-color: #ddd;}
+            """
+                        }
+                    }
+                    body {
+                        h1 { +"Monitoring System" }
+
+                        table {
                             tr {
-                                td { +f.funName }
+                                th { +"Function Name" }
                                 uniqueMetricNames.forEach { metricName ->
-                                    td {
-                                        +f.metrics.getOrDefault(metricName, "-")
+                                    th { +metricName }
+                                }
+                            }
+                            allFunctions.forEach { f ->
+                                tr {
+                                    td { +f.funName }
+                                    uniqueMetricNames.forEach { metricName ->
+                                        td {
+                                            +f.metrics.getOrDefault(metricName, "-")
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+            } else {
+                call.respondText("Session GUID not found", status = HttpStatusCode.BadRequest)
             }
         }
     }
