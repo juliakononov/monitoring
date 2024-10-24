@@ -23,13 +23,26 @@ fun Application.serverRoutes() {
             call.respond(HttpStatusCode.Created, myUuid)
         }
 
-        get("/server/send-unique-metrics") {
-            val uniqueMetricNames = metricStorage.getUniqueMetricNames()
+        get("/server/send-sessions-guid") {
+            val sessionsGuid = metricStorage.getSessionsGuid()
+            call.respond(sessionsGuid)
+        }
+
+        get("/server/send-unique-metrics/{sessionGuid}") {
+            val sessionGuid = call.parameters["sessionGuid"] ?: return@get call.respondText(
+                "Session ID not found",
+                status = HttpStatusCode.BadRequest
+            )
+            val uniqueMetricNames = metricStorage.getCurrentSessionMetricNames(sessionGuid)
             call.respond(uniqueMetricNames)
         }
 
-        get("/server/send-functions") {
-            val functions = metricStorage.getFunctionsToPage(0, "")
+        get("/server/send-functions/{sessionGuid}") {
+            val guid = call.parameters["sessionGuid"] ?: return@get call.respondText(
+                "Session ID not found",
+                status = HttpStatusCode.BadRequest
+            )
+            val functions = metricStorage.getFunctionsToPage(guid, 0, "")
             call.respond(functions)
         }
     }
