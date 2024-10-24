@@ -28,7 +28,6 @@ fun Application.clientRoutes() {
     }
     routing {
         get("client/sessions") {
-            // Запрос списка сессий с другого API
             val sessionsGuid: MutableSet<String> = client.get("/server/send-sessions-guid").body()
 
             call.respondHtml {
@@ -51,11 +50,11 @@ fun Application.clientRoutes() {
                     }
                     ul {
                         id = "session-list"
-                        // Отображение всех сессий в виде списка
+                        // Список сессий
                         sessionsGuid.forEach { guid ->
                             li {
-                                // Задаем атрибут data-guid сразу при создании элемента
                                 attributes["data-guid"] = guid
+                                onClick = "window.location.href = '/session/$guid';"
                                 +"$guid"
                             }
                         }
