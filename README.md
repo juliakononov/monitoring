@@ -18,11 +18,16 @@ java -jar build/libs/monitoring-0.0.1-client.jar
 ```
 ---
 ## Описание
-После запуска сервер сможет принимать POST-запросы на сохранение метрик по URL-адресу:
-* `http://<YOUR-SERVER-HOST>/server/save-metric`
+После запуска сервер сможет генерировать и отправлять агенту уникальный id для сессии по GET-запросу:
+* `http://<YOUR-SERVER-HOST>/server/new-session`
 
-После запуска клиента получить таблицу можно по адресу:
-* `http://<YOUR-CLIENT-HOST>/client/table`
+Полученный id важно сохранить, для маркировки дальнейших метрик. 
+
+После этого агент может начать собирать метрики и отправлять их с помощью POST-запроса по URL-адресу:
+* `http://<YOUR-SERVER-HOST>/server/save-metric`
+---
+После запуска клиента получить список всех сессий можно по адресу:
+* `http://<YOUR-CLIENT-HOST>/client/sessions`
 
 ## Формат
 Запросы принимаются в виде json-файла со следующей структурой:
@@ -30,6 +35,7 @@ java -jar build/libs/monitoring-0.0.1-client.jar
 ```json
 [
     {
+        "guid": "1234"
         "name": "MetricName",
         "params": {
             "funName": "name",
@@ -44,11 +50,13 @@ java -jar build/libs/monitoring-0.0.1-client.jar
   ```json
     [
       {
+          "guid": "1234"
           "name": "Metric1",
           "params": {...}
       },
       <...>
       {
+          "guid": "1234"
           "name": "MetricN",
           "params": {...}
       }
