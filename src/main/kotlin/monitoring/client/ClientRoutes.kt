@@ -10,12 +10,12 @@ import io.ktor.client.plugins.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
+import io.ktor.server.http.content.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.html.*
 import monitoring.entities.Function
 
-const val PAGE_REFRESH_INTERVAL = 1
 fun Application.clientRoutes() {
     val client = HttpClient(CIO) {
         defaultRequest {
@@ -27,19 +27,17 @@ fun Application.clientRoutes() {
         }
     }
     routing {
-        get("client/sessions") {
-            val sessionsGuid: MutableSet<String> = client.get("/server/send-sessions-guid").body()
+        static("/css") {
+            resources("css")
+        }
+
+        get("/sessions") {
+            val sessionsGuid: MutableSet<String> = client.get("/sessions-guid").body()
 
             call.respondHtml {
                 head {
                     title("Select session")
-                    style {
-                        +"body { font-family: Arial, sans-serif; margin: 20px; }"
-                        +"input { padding: 10px; margin-bottom: 20px; font-size: 16px; }"
-                        +"ul { list-style-type: none; padding: 0; }"
-                        +"li { padding: 10px; margin: 5px 0; background-color: #f0f0f0; border-radius: 5px; cursor: pointer; }"
-                        +"li:hover { background-color: #e0e0e0; }"
-                    }
+                    link(rel="stylesheet", href="/css/styles.css", type = "text/css")
                 }
                 body {
                     h1 { +"Select your session" }
@@ -50,7 +48,6 @@ fun Application.clientRoutes() {
                     }
                     ul {
                         id = "session-list"
-                        // Список сессий
                         sessionsGuid.forEach { guid ->
                             li {
                                 attributes["data-guid"] = guid
@@ -83,53 +80,22 @@ fun Application.clientRoutes() {
                 }
             }
         }
-        get("/session/{guid}") {
+        get("/sessions/{guid}") {
             val guid = call.parameters["guid"]
             if (guid != null) {
-                val uniqueMetricNames: Set<String> = client.get("/server/send-unique-metrics/$guid").body()
-                val allFunctions: List<Function> = client.get("/server/send-functions/$guid").body()
+                val uniqueMetricNames: Set<String> = client.get("/unique-metrics/$guid").body()
+                val allFunctions: List<Function> = client.get("/functions/$guid").body()
 
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
-                        meta {
-                            httpEquiv = "refresh"
-                            content = "$PAGE_REFRESH_INTERVAL"
-                        }
-
-                        title { +"Monitoring" }
-                        style {
-                            +"""
-            h1 {
-                font-family: Arial, Helvetica, sans-serif;
-                color: black
-            }
-            table {
-                font-family: Arial, Helvetica, sans-serif;
-                width: 100%;
-                border-collapse: collapse;
-            }
-            th, td {
-                border: 1px solid black;
-                padding: 8px;
-                text-align: left;
-            }
-            th {padding-top: 12px;
-                padding-bottom: 12px;
-                text-align: left;
-                background-color: #04AA6D;
-                color: white;
-            }
-            tr:nth-child(even) { /*  Делает четные строки с другим фоном */
-                background-color: #f2f2f2;
-            }
-            tr:hover {background-color: #ddd;}
-            """
-                        }
+                        title("Monitoring")
+                        link(href="/css/styles.css", rel="stylesheet")
+                        script { src="/script.css" }
                     }
                     body {
                         h1 { +"Monitoring System" }
-
                         table {
+                            id = "metrics-table"
                             tr {
                                 th { +"Function Name" }
                                 uniqueMetricNames.forEach { metricName ->
@@ -141,7 +107,9 @@ fun Application.clientRoutes() {
                                     td { +f.funName }
                                     uniqueMetricNames.forEach { metricName ->
                                         td {
-                                            +f.metrics.getOrDefault(metricName, "-")
+                                            attributes["data-metric-name"] = metricName
+                                            attributes["data-function-name"] = f.funName
+                                            +f.metrics.getOrDefault(metricName, "-").toString()
                                         }
                                     }
                                 }
