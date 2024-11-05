@@ -19,15 +19,15 @@ java -jar build/libs/monitoring-0.0.1-client.jar
 ---
 ## Описание
 После запуска сервер сможет генерировать и отправлять агенту уникальный id для сессии по GET-запросу:
-* `http://<YOUR-SERVER-HOST>/server/new-session`
+* `http://<YOUR-SERVER-HOST>/new-session`
 
 Полученный id важно сохранить, для маркировки дальнейших метрик. 
 
 После этого агент может начать собирать метрики и отправлять их с помощью POST-запроса по URL-адресу:
-* `http://<YOUR-SERVER-HOST>/server/save-metric`
+* `http://<YOUR-SERVER-HOST>/metrics`
 ---
 После запуска клиента получить список всех сессий можно по адресу:
-* `http://<YOUR-CLIENT-HOST>/client/sessions`
+* `http://<YOUR-CLIENT-HOST>/sessions`
 
 ## Формат
 Запросы принимаются в виде json-файла со следующей структурой:
