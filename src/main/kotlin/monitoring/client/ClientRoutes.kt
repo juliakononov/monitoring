@@ -27,17 +27,16 @@ fun Application.clientRoutes() {
         }
     }
     routing {
-        static("/css") {
-            resources("css")
+        static("/static") {
+            resources("static")
         }
-
         get("/sessions") {
-            val sessionsGuid: MutableSet<String> = client.get("/sessions-guid").body()
-
+            val sessionsGuid: MutableSet<String> = client.get("/sessions-guids").body()
             call.respondHtml {
                 head {
                     title("Select session")
-                    link(rel="stylesheet", href="/css/styles.css", type = "text/css")
+                    link(rel = "stylesheet", href = "/static/styles.css", type = "text/css")
+                    script { src = "/static/script.js" }
                 }
                 body {
                     h1 { +"Select your session" }
@@ -48,38 +47,25 @@ fun Application.clientRoutes() {
                     }
                     ul {
                         id = "session-list"
+                        script {
+                            unsafe {
+                                +"""
+                                sessions = ${sessionsGuid.map { """{"guid":"$it"}""" }};
+                                """
+                            }
+                        }
                         sessionsGuid.forEach { guid ->
                             li {
                                 attributes["data-guid"] = guid
-                                onClick = "window.location.href = '/session/$guid';"
+                                onClick = "window.location.href = '/sessions/$guid';"
                                 +"$guid"
                             }
-                        }
-                    }
-                    script {
-                        unsafe {
-                            // JavaScript для фильтрации сессий
-                            +"""
-                    let sessions = ${sessionsGuid.map { """{"guid":"$it"}""" }};
-                    function filterSessions() {
-                        const query = document.getElementById('search').value.toLowerCase();
-                        const filteredSessions = sessions.filter(session => session.guid.toLowerCase().includes(query));
-                        const sessionListElement = document.getElementById('session-list');
-                        sessionListElement.innerHTML = '';
-                        filteredSessions.forEach(session => {
-                            const li = document.createElement('li');
-                            li.textContent = session.guid;
-                            li.setAttribute('data-guid', session.guid);
-                            li.onclick = () => window.location.href = '/session/' + session.guid;
-                            sessionListElement.appendChild(li);
-                        });
-                    }
-                    """
                         }
                     }
                 }
             }
         }
+
         get("/sessions/{guid}") {
             val guid = call.parameters["guid"]
             if (guid != null) {
@@ -89,8 +75,8 @@ fun Application.clientRoutes() {
                 call.respondHtml(HttpStatusCode.OK) {
                     head {
                         title("Monitoring")
-                        link(href="/css/styles.css", rel="stylesheet")
-                        script { src="/script.css" }
+                        link(rel = "stylesheet", href = "/static/styles.css", type = "text/css")
+                        script { src = "/static/script.js" }
                     }
                     body {
                         h1 { +"Monitoring System" }
@@ -109,10 +95,16 @@ fun Application.clientRoutes() {
                                         td {
                                             attributes["data-metric-name"] = metricName
                                             attributes["data-function-name"] = f.funName
-                                            +f.metrics.getOrDefault(metricName, "-").toString()
+                                            +f.metrics.getOrDefault(metricName, "-")
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        script {
+                            unsafe {
+                                +"window.guid = '$guid';"
                             }
                         }
                     }

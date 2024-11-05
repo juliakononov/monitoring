@@ -39,7 +39,7 @@ fun generateRandomMetric(guid: String): Metric {
 }
 
 fun sendMetrics(metrics: List<Metric>) {
-    val url = URL("http://localhost:8080/server/save-metric")
+    val url = URL("http://localhost:8080/metrics")
     val connection = url.openConnection() as HttpURLConnection
     connection.requestMethod = "POST"
     connection.setRequestProperty("Content-Type", "application/json")
@@ -64,7 +64,7 @@ fun main() {
 
 
         fixedRateTimer("metricSender", initialDelay = 0, period = delta) {
-            val randomSize = Random.nextInt(1, 10)
+            val randomSize = Random.nextInt(1, 100)
             val metrics = List(randomSize) { generateRandomMetric(guid) }
             sendMetrics(metrics)
         }

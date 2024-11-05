@@ -56,4 +56,5 @@ dependencies {
     implementation("io.ktor:ktor-server-html-builder:$ktor_version")
     implementation("org.jetbrains.kotlin-wrappers:kotlin-css:$kotlin_css_version")
     implementation("com.github.UnitTestBot:jacodb:neo-SNAPSHOT")
+    implementation("io.ktor:ktor-server-websockets:$ktor_version")
 }
