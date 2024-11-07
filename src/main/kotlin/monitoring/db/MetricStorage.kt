@@ -9,8 +9,6 @@ import org.jacodb.api.storage.ers.EntityRelationshipStorage
 import org.jacodb.api.storage.ers.findOrNew
 import org.jacodb.impl.storage.ers.ram.RAMEntityRelationshipStorageSPI
 
-const val NUM_OF_ELEMENT_ON_PAGE = 20
-
 class MetricStorage : Storage {
     private val ersSettings: ErsSettings get() = EmptyErsSettings
     private val persistenceLocation: String? get() = null
@@ -86,7 +84,7 @@ class MetricStorage : Storage {
             val uniqueMetrics =  txn.getPropertyNames("Function") - "functionName"
 
             val entities = txn.all("Function")
-            val entitiesToPage = entities.drop(pageNumber * NUM_OF_ELEMENT_ON_PAGE).take(NUM_OF_ELEMENT_ON_PAGE)
+            val entitiesToPage = entities
 
             entitiesToPage.forEach { e ->
                 val funName: String = e["functionName"] ?: throw IllegalStateException()

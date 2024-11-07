@@ -95,7 +95,7 @@ fun Application.clientRoutes() {
                                         td {
                                             attributes["data-metric-name"] = metricName
                                             attributes["data-function-name"] = f.funName
-                                            +f.metrics.getOrDefault(metricName, "-")
+                                            +f.metrics.getOrDefault(metricName, "")
                                         }
                                     }
                                 }

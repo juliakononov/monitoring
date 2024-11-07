@@ -5,6 +5,6 @@ import io.ktor.server.netty.*
 
 fun main() {
     embeddedServer(Netty, port = 8081){
-        clientRoutes() // Логика обработки запросов
+        clientRoutes()
     }.start(wait = true)
 }
